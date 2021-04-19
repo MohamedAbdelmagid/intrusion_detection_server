@@ -33,6 +33,7 @@ class Device(db.Model):
 @app.route('/<address>', methods=['GET'])
 def authenticate_ip(address):
     current_device_IP = request.remote_addr
+    print(current_device_IP)
 
     # Authenticate the current device
     currentDevice = Device.query.filter_by(ip_address=current_device_IP).first()
@@ -65,7 +66,7 @@ def get_all_devices():
 
     return jsonify(data)
 
-@app.route('/add/<address>/<event>', methods=['POST'])
+@app.route('/add/<address>/<event>', methods=['GET', 'POST'])
 def add_new_device(address, event):
     # Find device with this ip in the database
     device = Device.query.filter_by(ip_address=address).first()
@@ -79,6 +80,39 @@ def add_new_device(address, event):
 
     return jsonify({ 'added': newDevice.to_dict()}), 201
 
+@app.route('/add/me/<event>', methods=['GET', 'POST'])
+def add_me(event):
+    current_device_IP = request.remote_addr
+    # Find device with this ip in the database
+    device = Device.query.filter_by(ip_address=current_device_IP).first()
+    if device:
+        return jsonify({ 
+            'msg': 'You already exist in the database',
+            'device': device.to_dict()
+        }), 303
+
+    # Add new device to database
+    newDevice = Device(ip_address=current_device_IP, event=event)
+    db.session.add(newDevice)
+    db.session.commit()
+
+    return jsonify({ 'added': newDevice.to_dict()}), 201
+
+@app.route('/delete/<address>', methods=['GET', 'POST'])
+def delete_device(address):
+    # Find device with this ip in the database
+    device = Device.query.filter_by(ip_address=address).first()
+    if device:
+        # Delete the device from database
+        db.session.delete(device)
+        db.session.commit()
+
+        return jsonify({ 'deleted': device.to_dict() }), 201
+
+    return jsonify({ 'msg': 'Not exist in the database', 'address': address }), 303
+
+
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')  # important to mention debug=True
+    app.run(host='0.0.0.0', port=80)  # important to mention debug=True
+    # app.run(debug=True)
