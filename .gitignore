@@ -2,3 +2,4 @@
 __pycache__
 commads.txt
 /env
+*.sqlite3
